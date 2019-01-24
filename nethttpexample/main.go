@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 )
 
 // Person Struct
@@ -40,16 +39,27 @@ func main() {
 
 // Function of type handler func
 func home(w http.ResponseWriter, req *http.Request) {
-	now := time.Now()
 
 	// Utilizing the Fprint function which takes
 	// a writer and a message
-	fmt.Fprint(w, "<html><body>")
-	// Fprintf takes a writer, message and
-	// any extra paramters needed in the message
-	fmt.Fprintf(w, "<h1>%s</h1>", now)
-	fmt.Fprint(w, "<p>Go is kinda cool</p>")
-	fmt.Fprint(w, "</body></html>")
+	_, err := fmt.Fprint(w, `<html>
+						<body>
+							<h1>API Usage</h1>
+							<p><bold>/people - GET</bold> Used to list out people.</p>
+							<p>
+								<bold>/people - POST</bold> Used to add a person to list of people	
+								Fields Required:
+								<ul>
+									<li>name - string - Name of person</li>
+									<li>age - int - Age of person</li>
+								</ul>
+							</p>
+						</body>
+						</html>
+					`)
+	if err != nil {
+		fmt.Printf("Error writing to response: %v", err)
+	}
 }
 
 func api(w http.ResponseWriter, req *http.Request) {
@@ -57,18 +67,33 @@ func api(w http.ResponseWriter, req *http.Request) {
 	if req.Method == "GET" {
 		// Encode the people slice to JSON
 		// And write it back out
-		json.NewEncoder(w).Encode(people)
+		encoder := json.NewEncoder(w)
+		err := encoder.Encode(people)
+
+		if err != nil {
+			fmt.Printf("Something went wrong encoding data: %v", err)
+		}
 
 	} else if req.Method == "POST" {
 		// Create an instance of a Person struct
-		var new Person
+		var newPerson Person
 		// Put the info from the request into the new person
-		json.NewDecoder(req.Body).Decode(&new)
+		decoder := json.NewDecoder(req.Body)
+		err := decoder.Decode(&newPerson)
+		if err != nil {
+			fmt.Printf("Error decoding data: %v", err)
+		}
 		// Add that person to the slice
-		people = append(people, new)
+		people = append(people, newPerson)
 
-		fmt.Fprint(w, "Success!")
+		_, err = fmt.Fprint(w, "Success!")
+		if err != nil {
+			fmt.Printf("Error writing back to response: %v", err)
+		}
 	} else {
-		fmt.Fprint(w, "Improper Request Method!")
+		_, err := fmt.Fprint(w, "Improper Request Method!")
+		if err != nil {
+			fmt.Printf("Error writin back to response: %v", err)
+		}
 	}
 }
